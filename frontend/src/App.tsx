@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import './App.css';
 
+// PENTING: Ganti nilai ini dengan URL publik backend FastAPI Anda dari Localtunnel/Ngrok (Port 8000)
+// Contoh: const API_BASE_URL = 'https://backend-mesin-pencari.loca.lt';
+const API_BASE_URL = 'http://localhost:8000';
+
 function App() {
   const [query, setQuery] = useState('');
   const [expandedQuery, setExpandedQuery] = useState('');
@@ -17,7 +21,7 @@ function App() {
     setLoading(true);
     setSuggestion('');
     try {
-      const response = await fetch(`http://localhost:8000/search/semantic?query=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`${API_BASE_URL}/search/semantic?query=${encodeURIComponent(searchQuery)}`);
       const data = await response.json();
       setExpandedQuery(data.expanded_query);
       setResults(data.results);
@@ -42,7 +46,7 @@ function App() {
   const handleCompositionalSearch = async () => {
     setLoading(true);
     try {
-        const response = await fetch('http://localhost:8000/search/compositional', {
+        const response = await fetch(`${API_BASE_URL}/search/compositional`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -66,7 +70,7 @@ function App() {
 
   const handleGetHeatmap = async (id: string) => {
     try {
-        const response = await fetch(`http://localhost:8000/xai/heatmap?image_id=${encodeURIComponent(id)}&query=${encodeURIComponent(query || addText)}`);
+        const response = await fetch(`${API_BASE_URL}/xai/heatmap?image_id=${encodeURIComponent(id)}&query=${encodeURIComponent(query || addText)}`);
         const data = await response.json();
         alert(`XAI Heatmap Data generated for ${id}! Matrix shape: ${data.heatmap_shape[0]}x${data.heatmap_shape[1]}`);
     } catch (e) {

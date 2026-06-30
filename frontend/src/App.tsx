@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import './App.css';
 
 // PENTING: Ganti nilai ini dengan URL publik backend FastAPI Anda dari Localtunnel/Ngrok (Port 8000)
-// Contoh: const API_BASE_URL = 'https://backend-mesin-pencari.loca.lt';
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000'; 
 
 function App() {
   const [query, setQuery] = useState('');
@@ -12,7 +11,6 @@ function App() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Compositional Search State
   const [baseImageId, setBaseImageId] = useState('');
   const [addText, setAddText] = useState('');
   const [subtractText, setSubtractText] = useState('');
@@ -21,7 +19,10 @@ function App() {
     setLoading(true);
     setSuggestion('');
     try {
-      const response = await fetch(`${API_BASE_URL}/search/semantic?query=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`${API_BASE_URL}/search/semantic?query=${encodeURIComponent(searchQuery)}`, {
+          // Kunci rahasia untuk melewati halaman peringatan keamanan Localtunnel
+          headers: { 'Bypass-Tunnel-Reminder': 'true' }
+      });
       const data = await response.json();
       setExpandedQuery(data.expanded_query);
       setResults(data.results);
@@ -30,6 +31,7 @@ function App() {
       }
     } catch (error) {
       console.error("Error searching:", error);
+      alert("Gagal mengambil data pencarian semantik. Periksa console peramban Anda.");
     }
     setLoading(false);
   };
@@ -48,7 +50,10 @@ function App() {
     try {
         const response = await fetch(`${API_BASE_URL}/search/compositional`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Bypass-Tunnel-Reminder': 'true' // Kunci bypass
+            },
             body: JSON.stringify({
                 base_image_id: baseImageId,
                 add_text: addText || null,
@@ -64,13 +69,16 @@ function App() {
         }
     } catch (error) {
         console.error(error);
+        alert("Gagal memproses pencarian komposisional.");
     }
     setLoading(false);
   }
 
   const handleGetHeatmap = async (id: string) => {
     try {
-        const response = await fetch(`${API_BASE_URL}/xai/heatmap?image_id=${encodeURIComponent(id)}&query=${encodeURIComponent(query || addText)}`);
+        const response = await fetch(`${API_BASE_URL}/xai/heatmap?image_id=${encodeURIComponent(id)}&query=${encodeURIComponent(query || addText)}`, {
+            headers: { 'Bypass-Tunnel-Reminder': 'true' }
+        });
         const data = await response.json();
         alert(`XAI Heatmap Data generated for ${id}! Matrix shape: ${data.heatmap_shape[0]}x${data.heatmap_shape[1]}`);
     } catch (e) {
@@ -84,7 +92,6 @@ function App() {
       <p style={{ color: 'gray' }}>Powered by CLIP, SAM, & Flan-T5</p>
 
       <div style={{ display: 'flex', gap: '40px', marginBottom: '30px' }}>
-          {/* Semantic Reasoning Panel */}
           <div style={{ flex: 1, padding: '20px', border: '1px solid #ddd', borderRadius: '8px' }}>
             <h3>1. Situational & Semantic Reasoning</h3>
             <div style={{ marginBottom: '10px' }}>
@@ -110,7 +117,6 @@ function App() {
             </button>
           </div>
 
-          {/* Compositional Search Panel */}
           <div style={{ flex: 1, padding: '20px', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
             <h3>2. Compositional Search</h3>
             <input type="text" placeholder="Base Image ID (e.g. img_1)" value={baseImageId} onChange={e=>setBaseImageId(e.target.value)} style={{ width: '100%', marginBottom: '10px', padding: '8px', boxSizing: 'border-box' }}/>
@@ -150,12 +156,6 @@ function App() {
             </div>
           ))}
         </div>
-      </div>
-
-      <div style={{ marginTop: '50px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-        <h3>System Usability Scale (SUS) Feedback</h3>
-        <p style={{ fontSize: '14px', color: '#666' }}>Help us improve this Natural User Interface.</p>
-        <button style={{ padding: '5px 10px', cursor: 'pointer' }}>Fill Questionnaire</button>
       </div>
     </div>
   );

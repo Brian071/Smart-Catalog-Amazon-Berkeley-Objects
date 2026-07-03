@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import './App.css';
 
-// PENTING: Ganti nilai ini dengan URL publik backend FastAPI Anda dari Localtunnel/Ngrok (Port 8000)
-const API_BASE_URL = 'http://localhost:8000'; 
+// PENTING: Ganti nilai ini dengan URL publik backend dari Localtunnel (Port 8000)
+// Contoh: const API_BASE_URL = 'https://blue-elephants-jump.loca.lt';
+const API_BASE_URL = 'MASUKKAN_URL_LOCALTUNNEL_DI_SINI'; 
 
 function App() {
   const [query, setQuery] = useState('');

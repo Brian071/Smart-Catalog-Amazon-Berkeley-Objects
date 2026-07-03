@@ -6,6 +6,7 @@ import cv2
 import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
+import os
 
 # Load CLIP Model
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -40,7 +41,11 @@ class Embedder:
 
 class VectorStore:
     def __init__(self, host="localhost", port=6333, collection_name="shoes"):
-        self.client = QdrantClient(":memory:")
+        # PERBAIKAN: Qdrant kini menyimpan data secara permanen di direktori ini
+        storage_path = "/content/Smart-Catalog-Amazon-Berkeley-Objects/backend/qdrant_storage"
+        os.makedirs(storage_path, exist_ok=True)
+        self.client = QdrantClient(path=storage_path)
+        
         self.collection_name = collection_name
         self.setup_collection()
 

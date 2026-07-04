@@ -10,13 +10,15 @@ from qdrant_client.http.models import Distance, VectorParams, PointStruct
 import io
 import uuid
 from PIL import Image
+import os
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="SOTA E-Commerce Visual Search Engine")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -33,7 +35,7 @@ class ArithmeticRequest(BaseModel):
     add_text: Optional[str] = None
     subtract_text: Optional[str] = None
 
-@app.get("/")
+@app.get("/health")
 def health_check():
     return {"status": "ok", "message": "Engine running smoothly"}
 
@@ -51,17 +53,14 @@ async def index_image(id: str = Form(...), file: UploadFile = File(...)):
 @app.get("/search/semantic")
 def search_semantic(query: str):
     expanded_res = reasoning_engine.expand_query(query)
-
-    # We use the text embedding on expanded text
     query_vector = embedder.get_text_embedding(expanded_res["expanded_text"])
 
     results = vector_store.search(
         query_vector=query_vector,
         limit=5,
-        threshold=TRIAL_228_CONFIG["similarity_threshold"]
+        threshold=None
     )
 
-    # Return original id instead of UUID
     formatted_results = []
     for res in results:
         formatted_results.append({
@@ -79,7 +78,6 @@ def search_semantic(query: str):
 
 @app.post("/search/compositional")
 def search_compositional(req: ArithmeticRequest):
-    # Fetch base vector from Qdrant using original string ID mapped to UUID5
     uuid_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, req.base_image_id))
     try:
         retrieve_result = vector_store.client.retrieve(
@@ -106,7 +104,7 @@ def search_compositional(req: ArithmeticRequest):
     results = vector_store.search(
         query_vector=final_vector,
         limit=5,
-        threshold=TRIAL_228_CONFIG["similarity_threshold"]
+        threshold=None
     )
 
     formatted_results = []
@@ -123,21 +121,18 @@ def search_compositional(req: ArithmeticRequest):
 
 @app.get("/xai/heatmap")
 def get_heatmap(image_id: str, query: str):
-    """
-    Generate XAI Heatmap for a given image and query.
-    Returns simulated heatmap data for now.
-    """
-    # Simulate loading image by id
     dummy_img = Image.new('RGB', (224, 224), color = 'white')
     heatmap_matrix = xai_engine.generate_attention_heatmap(dummy_img, query)
-
-    # Normally we'd return a base64 encoded image overlay, but returning raw numbers for prototype representation
     return {
         "image_id": image_id,
         "query": query,
         "heatmap_shape": heatmap_matrix.shape,
         "status": "success (mocked)"
     }
+
+build_dir = "/content/Smart-Catalog-Amazon-Berkeley-Objects/frontend/build"
+if os.path.exists(build_dir):
+    app.mount("/", StaticFiles(directory=build_dir, html=True), name="frontend")
 
 if __name__ == "__main__":
     uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
